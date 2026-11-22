@@ -1,0 +1,35 @@
+{
+  "name": "studio-bridge-mcp",
+  "version": "1.0.0",
+  "description": "Studio Bridge MCP — Real-time WebSocket & HTTP MCP server for Adobe After Effects, Adobe Premiere Pro (CEP + UXP), and local FFmpeg / Whisper video editing",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "broker": "node broker.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "after-effects-mcp",
+    "premiere-pro-mcp",
+    "adobe-mcp",
+    "adobe",
+    "premiere-pro",
+    "after-effects",
+    "cep",
+    "uxp",
+    "extendscript",
+    "ffmpeg",
+    "video-editing",
+    "motion-graphics"
+  ],
+  "author": "Sergio Payares",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "ws": "^8.22.0"
+  }
+}

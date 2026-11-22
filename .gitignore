@@ -1,0 +1,36 @@
+# =============================================================================
+# Studio Bridge — .gitignore
+# Nada de lo que sigue debe versionarse: secretos, binarios pesados, artefactos.
+# =============================================================================
+
+# Secretos y credenciales
+cert.p12
+*.p12
+.bridge-secret
+
+# Dependencias de Node
+node_modules/
+
+# Binarios pesados (whisper.cpp + modelos) — se regeneran con setup-whisper.ps1
+mcp-video-server/bin/
+mcp-video-server/models/
+bin/
+models/
+
+# Artefactos de build (regenerables con `node build-package.js`)
+dist/
+
+# Configuración local (claves de proveedores, vacías o personales)
+feather-config.json
+
+# Archivos de distribución / temporales
+Studio-Bridge-Compartir.zip
+*.zip
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+
+# Adobe ZXP signer binary (provide locally or via PATH)
+ZXPSignCmd.exe
+

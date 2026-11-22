@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.antigravity.bridge" ExtensionBundleVersion="1.0.0" ExtensionBundleName="Studio Bridge" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <ExtensionList>
+        <Extension Id="com.antigravity.bridge.panel" Version="1.0.0" />
+    </ExtensionList>
+    <ExecutionEnvironment>
+        <HostList>
+            <!-- Adobe Premiere Pro CC 2020 (14.0) hasta 2026+ -->
+            <Host Name="PPRO" Version="[14.0,99.9]" />
+            <!-- Adobe After Effects CC 2020 (17.0) hasta 2026+ -->
+            <Host Name="AEFT" Version="[17.0,99.9]" />
+            <!-- Adobe Media Encoder CC 2020 (14.0) hasta 2026+ -->
+            <Host Name="AME" Version="[14.0,99.9]" />
+        </HostList>
+        <LocaleList>
+            <Locale Code="All" />
+        </LocaleList>
+        <RequiredRuntimeList>
+            <RequiredRuntime Name="CSXS" Version="9.0" />
+        </RequiredRuntimeList>
+    </ExecutionEnvironment>
+    <DispatchInfoList>
+        <Extension Id="com.antigravity.bridge.panel">
+            <DispatchInfo>
+                <Resources>
+                    <MainPath>./client/index.html</MainPath>
+                    <ScriptPath>./host/bridge.jsx</ScriptPath>
+                    <CEFCommandLine>
+                        <Parameter>--enable-nodejs</Parameter>
+                        <Parameter>--mixed-context</Parameter>
+                    </CEFCommandLine>
+                </Resources>
+                <Lifecycle>
+                    <AutoVisible>true</AutoVisible>
+                </Lifecycle>
+                <UI>
+                    <Type>Panel</Type>
+                    <Menu>Studio Bridge</Menu>
+                    <Geometry>
+                        <Size>
+                            <Width>340</Width>
+                            <Height>580</Height>
+                        </Size>
+                        <MinSize>
+                            <Width>260</Width>
+                            <Height>320</Height>
+                        </MinSize>
+                    </Geometry>
+                </UI>
+            </DispatchInfo>
+        </Extension>
+    </DispatchInfoList>
+</ExtensionManifest>

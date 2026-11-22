@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Bridge</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/CSInterface.js"></script>
+</head>
+<body>
+    <div class="app-shell bridge-panel" id="app-shell">
+        <!-- 1. Header Estilo ToolBox 2.0 -->
+        <header class="app-header">
+            <div class="brand-group">
+                <span class="brand-dot offline" id="headerDot"></span>
+                <span class="brand-title">Studio Bridge</span>
+            </div>
+            
+            <div class="header-center">
+                <div id="statusBadge" class="badge-status disconnected">
+                    <span class="status-pulse"></span>
+                    <span id="statusText">DESCONECTADO</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button id="btnReload" class="tb-btn tb-btn-icon" title="Reiniciar Panel" aria-label="Reiniciar">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- 2. Contenido del Puente Local (Sin Chat) -->
+        <main class="bridge-body">
+            <!-- Tarjeta de Configuración Local -->
+            <div class="settings-card">
+                <div class="bridge-card-header">
+                    <span class="card-dot-purple"></span>
+                    <span class="bridge-card-title">Configuración del Puente Local</span>
+                </div>
+
+                <div class="setting-row">
+                    <span class="setting-label">Aplicación Host:</span>
+                    <span id="hostAppText" class="setting-val highlight">Detectando...</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Puerto Loopback:</span>
+                    <span class="setting-val">127.0.0.1:8765</span>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Seguridad:</span>
+                    <span id="tokenStatusText" class="setting-val green">Token Local Automático</span>
+                </div>
+
+                <div class="bridge-btn-wrap">
+                    <button id="btnReconnect" class="tb-btn tb-btn-reconnect" type="button">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                            <path d="M16 16h5v5"/>
+                        </svg>
+                        <span>Reconectar Socket</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stepper de Tareas en curso (cuando el agente ejecuta acciones) -->
+            <div id="taskStepperWidget" class="task-stepper-widget is-hidden">
+                <div class="stepper-header" id="stepperToggleHeader">
+                    <div class="stepper-title-group">
+                        <span class="stepper-spinner"></span>
+                        <div class="stepper-text">
+                            <div class="stepper-task-title" id="stepperTaskName">Ejecutando tarea...</div>
+                            <div class="stepper-task-subtitle" id="stepperTaskSubtitle">En progreso</div>
+                        </div>
+                    </div>
+                    <div class="stepper-badge-percent" id="stepperPercent">0%</div>
+                </div>
+                <div class="stepper-progress-track">
+                    <div class="stepper-progress-bar" id="stepperProgressBar" style="width: 0%;"></div>
+                </div>
+                <div class="stepper-steps-list" id="stepperStepsList"></div>
+            </div>
+
+            <!-- 3. Registro Técnico de Comandos en Vivo -->
+            <div class="console-section">
+                <div class="console-header">
+                    <span>REGISTRO TÉCNICO DE COMANDOS (EN VIVO):</span>
+                    <button id="btnClearLog" class="btn-clear-log" type="button" title="Limpiar registro">Limpiar</button>
+                </div>
+                <div id="logConsole" class="log-container">
+                    <div class="log-entry info">[Bridge] Panel inicializado...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/bridge-actions.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

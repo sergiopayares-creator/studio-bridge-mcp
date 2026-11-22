@@ -1,0 +1,11 @@
+{
+  "id": "podcast-interview",
+  "name": "🎙️ Podcast & Entrevistas",
+  "description": "Cortes suaves y naturales (>0.6s), respiraciones controladas, normalización vocal a audio balanceado y marcadores organizados por capítulos temáticos.",
+  "systemPrompt": "Eres un editor especializado en podcast de largo formato y entrevistas conversacionales. Reglas obligatorias:\n1. Conserva la naturalidad de la conversación: NO cortes pausas reflexivas breves. Solo corta vacíos o silencios muertos mayores a 0.6 o 0.7 segundos.\n2. La consistencia y claridad del audio vocal es la máxima prioridad: normaliza la pista principal a audio balanceado con True Peak a -1.0 dB.\n3. Coloca marcadores comentados en cada cambio relevante de tema para facilitar la creación de capítulos de YouTube.",
+  "defaultSettings": {
+    "silenceThresholdDb": -35,
+    "minSilenceSec": 0.65,
+    "targetLufs": -14.0
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "manifestVersion": 5,
+  "id": "com.antigravity.studio.uxp.premiere",
+  "name": "Studio Bridge UXP (Premiere)",
+  "version": "1.0.2",
+  "main": "index.html",
+  "host": {
+    "app": "premierepro",
+    "minVersion": "25.6.0",
+    "data": {
+      "loadEvent": "startup"
+    }
+  },
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "studioBridgeUxpPanel",
+      "label": { "default": "Studio Bridge UXP" },
+      "main": "index.html",
+      "minimumSize": { "width": 220, "height": 180 },
+      "maximumSize": { "width": 960, "height": 900 },
+      "preferredDockedSize": { "width": 320, "height": 520 },
+      "preferredFloatingSize": { "width": 340, "height": 540 }
+    }
+  ],
+  "requiredPermissions": {
+    "localFileSystem": "fullAccess",
+    "network": {
+      "domains": [
+        "localhost",
+        "127.0.0.1",
+        "ws://localhost:8765",
+        "ws://127.0.0.1:8765",
+        "http://localhost:8765",
+        "http://127.0.0.1:8765"
+      ]
+    }
+  }
+}

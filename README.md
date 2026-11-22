@@ -1,8 +1,15 @@
 # Studio Bridge MCP — Adobe After Effects & Premiere Pro MCP Server (CEP + UXP + FFmpeg)
 
+[![GitHub Stars](https://img.shields.io/github/stars/sergiopayares-creator/studio-bridge-mcp?style=for-the-badge&logo=github&label=Stars&color=yellow)](https://github.com/sergiopayares-creator/studio-bridge-mcp/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](./LICENSE)
+[![MCP Server](https://img.shields.io/badge/MCP-WebSocket%20%2B%20HTTP-00c853?style=for-the-badge)](https://modelcontextprotocol.io)
+[![Adobe AE & Premiere](https://img.shields.io/badge/Adobe-After%20Effects%20%26%20Premiere%20Pro-9999FF?style=for-the-badge&logo=adobe)](https://github.com/sergiopayares-creator/studio-bridge-mcp)
+
 > **Real-time WebSocket (`8765`) & Shared HTTP Broker (`8766`) Model Context Protocol (MCP) server for Adobe After Effects, Adobe Premiere Pro (CEP + UXP 25.6+), and local FFmpeg / Whisper post-production.**
 >
 > **Author:** Sergio Payares · **License:** [MIT](./LICENSE)
+>
+> ⭐ **If Studio Bridge MCP saves you time or helps your workflow, please click the [Star ⭐ button](https://github.com/sergiopayares-creator/studio-bridge-mcp) in the top-right corner of this repository!** Stars help more creators and developers discover the project on GitHub.
 
 **Studio Bridge MCP** connects AI coding and creative agents (**Claude Desktop, Claude Code, Cursor, Windsurf, Cline, and custom MCP agents**) directly to **Adobe After Effects** and **Adobe Premiere Pro** over a persistent, low-latency WebSocket bridge—eliminating slow `/tmp` file-polling and context-bloating 400-tool schemas.
 
@@ -127,6 +134,14 @@ npm test
 ```
 
 Includes **81+ deterministic assertions** validating Bearer authentication, CORS isolation, client action allowlists, strict ES3 compilation for `toolkit.jsx` and `toolkit_ae.jsx`, contact-sheet image packaging, and UXP isolation.
+
+---
+
+## ⭐ Support & Star the Project
+
+If **Studio Bridge MCP** is useful for your video editing, motion graphics, or AI agent workflows:
+- Give this repository a **⭐ Star** at the top-right of [github.com/sergiopayares-creator/studio-bridge-mcp](https://github.com/sergiopayares-creator/studio-bridge-mcp).
+- Share it with other creators building with **Claude Code**, **Cursor**, **After Effects**, and **Premiere Pro**.
 
 ---
 

@@ -3,10 +3,12 @@
  * ES5 puro: lo carga Adobe CEP y los tests lo evalúan con `vm`.
  */
 (function (root, factory) {
+    var api = factory();
     if (typeof module === 'object' && module.exports) {
-        module.exports = factory();
-    } else {
-        root.StudioBridgeActions = factory();
+        module.exports = api;
+    }
+    if (root) {
+        root.StudioBridgeActions = api;
     }
 }(typeof self !== 'undefined' ? self : this, function () {
     var ACTIONS = {

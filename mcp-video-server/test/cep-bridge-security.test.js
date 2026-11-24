@@ -1,6 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
 import { createBridgeHttpServer } from '../lib/cep-bridge.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const BRIDGE_ACTIONS_PATH = path.resolve(__dirname, '../../extension/client/js/bridge-actions.js');
+
+test('StudioBridgeActions registers on global root even when module.exports exists (CEP Node integration)', () => {
+  const source = fs.readFileSync(BRIDGE_ACTIONS_PATH, 'utf8');
+  const sandbox = {
+    module: { exports: {} },
+    self: {},
+  };
+  vm.runInNewContext(source, sandbox);
+
+  assert.equal(typeof sandbox.self.StudioBridgeActions, 'object');
+  assert.equal(sandbox.self.StudioBridgeActions.isAllowedAction('toolkit'), true);
+  assert.equal(sandbox.self.StudioBridgeActions.isAllowedAction('getProjectSnapshot'), true);
+  assert.equal(sandbox.module.exports.isAllowedAction('toolkit'), true);
+});
 
 test('HTTP bridge does not expose command, prompt, or status routes to browser origins', async (t) => {
   const server = createBridgeHttpServer();

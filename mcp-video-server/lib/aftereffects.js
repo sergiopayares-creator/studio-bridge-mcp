@@ -68,21 +68,50 @@ export function isInsideTempDir(filePath) {
   }
 }
 
-function usableFrame(filePath) {
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const PNG_IEND_CHUNK = Buffer.from([
+  0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+]);
+
+export function isCompletePngBuffer(buf) {
+  if (!Buffer.isBuffer(buf) || buf.length < 45) return false;
+  if (!buf.subarray(0, 8).equals(PNG_SIGNATURE)) return false;
+  if (!buf.subarray(buf.length - 12).equals(PNG_IEND_CHUNK)) return false;
+  return true;
+}
+
+export function isCompletePngFile(filePath) {
+  let fd;
   try {
     const stat = fs.statSync(filePath);
-    return stat.isFile() && stat.size > 0;
+    if (!stat.isFile() || stat.size < 45) return false;
+    fd = fs.openSync(filePath, 'r');
+    const head = Buffer.alloc(8);
+    const tail = Buffer.alloc(12);
+    if (fs.readSync(fd, head, 0, 8, 0) !== 8) return false;
+    if (fs.readSync(fd, tail, 0, 12, stat.size - 12) !== 12) return false;
+    return head.equals(PNG_SIGNATURE) && tail.equals(PNG_IEND_CHUNK);
   } catch (_) {
     return false;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        fs.closeSync(fd);
+      } catch (_) {}
+    }
   }
 }
 
+function usableFrame(filePath) {
+  return isCompletePngFile(filePath);
+}
+
 /**
- * Waits (bounded) until every path exists and is non-empty. Returns the indexes
- * of the frames that are ready, so timestamps stay aligned with their image even
- * when the host skipped a frame.
+ * Waits (bounded) until every path exists and is a complete PNG. Returns the
+ * indexes of the frames that are ready, so timestamps stay aligned with their
+ * image even when the host skipped a frame.
  */
-export async function waitForFrameIndexes(paths, timeoutMs = 5000) {
+export async function waitForFrameIndexes(paths, timeoutMs = 10000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const ready = [];
@@ -112,7 +141,7 @@ export async function buildContactSheetJpeg(result, params = {}) {
     throw new Error('contactSheet: el host no generó ningún PNG temporal');
   }
 
-  const readyIndexes = await waitForFrameIndexes(requested, 5000);
+  const readyIndexes = await waitForFrameIndexes(requested, 10000);
   if (readyIndexes.length === 0) {
     throw new Error('contactSheet: el host no generó ningún PNG temporal');
   }
@@ -219,7 +248,7 @@ export async function buildCompareSheet(hostResult, params = {}) {
   const hostTimes = Array.isArray(hostResult.times) ? hostResult.times : [];
   const paramTimes = Array.isArray(params.times) ? params.times : [];
 
-  const readyIndexes = await waitForFrameIndexes(requested, 5000);
+  const readyIndexes = await waitForFrameIndexes(requested, 10000);
   if (readyIndexes.length === 0) {
     throw new Error('compare: el host no generó frames de AE');
   }

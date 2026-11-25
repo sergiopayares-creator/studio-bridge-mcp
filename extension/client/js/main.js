@@ -360,23 +360,38 @@
         }, 800);
     }
 
+    function isCompletePngBuffer(buf) {
+        if (!buf || buf.length < 45) return false;
+        var sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        var i;
+        for (i = 0; i < 8; i++) {
+            if (buf[i] !== sig[i]) return false;
+        }
+        var iend = [0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82];
+        var off = buf.length - 12;
+        for (i = 0; i < 12; i++) {
+            if (buf[off + i] !== iend[i]) return false;
+        }
+        return true;
+    }
+
     // Espera (diferido) al PNG de renderFrame y lo devuelve en Base64.
-    // Hasta 30 intentos x 100 ms (3.0 s) para comps 4K/motion blur denso.
+    // Hasta 100 intentos x 100 ms (10.0 s) para comps 16-bit/4K/motion blur denso.
     function readFrameBase64(write, attempt, callback) {
         var fs = require('fs');
         setTimeout(function() {
             try {
                 if (!fs.existsSync(write.path)) {
-                    if (attempt < 30) { readFrameBase64(write, attempt + 1, callback); return; }
+                    if (attempt < 100) { readFrameBase64(write, attempt + 1, callback); return; }
                     if (write.temp) scheduleFrameCleanup(write.path);
                     callback({ ok: false, error: 'PNG no disponible aún (timeout)', comp: write.comp, sequence: write.sequence, timecode: write.timecode, time: write.time, path: write.path });
                     return;
                 }
-                var b64;
+                var buf;
                 try {
-                    b64 = fs.readFileSync(write.path).toString('base64');
+                    buf = fs.readFileSync(write.path);
                 } catch (readErr) {
-                    if ((readErr.code === 'EBUSY' || readErr.code === 'EPERM' || readErr.code === 'EACCES') && attempt < 30) {
+                    if ((readErr.code === 'EBUSY' || readErr.code === 'EPERM' || readErr.code === 'EACCES') && attempt < 100) {
                         readFrameBase64(write, attempt + 1, callback);
                         return;
                     }
@@ -384,6 +399,16 @@
                     callback({ ok: false, error: String(readErr), comp: write.comp, sequence: write.sequence, timecode: write.timecode, time: write.time, path: write.path });
                     return;
                 }
+                if (!isCompletePngBuffer(buf)) {
+                    if (attempt < 100) {
+                        readFrameBase64(write, attempt + 1, callback);
+                        return;
+                    }
+                    if (write.temp) scheduleFrameCleanup(write.path);
+                    callback({ ok: false, error: 'PNG incompleto o truncado (sin bloque IEND tras timeout)', comp: write.comp, sequence: write.sequence, timecode: write.timecode, time: write.time, path: write.path });
+                    return;
+                }
+                var b64 = buf.toString('base64');
                 if (write.temp) scheduleFrameCleanup(write.path);
                 callback({ ok: true, comp: write.comp, sequence: write.sequence, timecode: write.timecode, time: write.time, path: write.path, base64: b64 });
             } catch (e) {

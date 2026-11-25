@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { createMcpServer, assertExpectedProject, normalizeToolkitParams } from '../index.js';
+import { createMcpServer, assertExpectedProject, normalizeToolkitParams, isCompletePngBuffer } from '../index.js';
 import { buildContactSheetJpeg, normalizeRenderFrameParams } from '../lib/aftereffects.js';
 import { assertWritablePath } from '../lib/security.js';
 import { FFMPEG_BIN } from '../lib/ffmpeg.js';
@@ -454,4 +454,55 @@ test('aftereffects_execute_extendscript returns error and line from the host', a
   assert.equal(payload.success, false);
   assert.equal(payload.error, 'boom (line 7)');
   assert.equal(payload.line, 7);
+});
+
+// --- 5) PNG completeness guard (anti-HTTP-400 INVALID_MEDIA) ---------------
+test('isCompletePngBuffer accepts valid PNG and rejects truncated or malformed buffers', () => {
+  const valid = Buffer.from(TINY_PNG, 'base64');
+  assert.equal(isCompletePngBuffer(valid), true);
+
+  // Truncated right before IEND (simulates deferred saveFrameToPng read mid-write)
+  const truncated = valid.subarray(0, valid.length - 12);
+  assert.equal(isCompletePngBuffer(truncated), false);
+
+  assert.equal(isCompletePngBuffer(Buffer.alloc(0)), false);
+  assert.equal(isCompletePngBuffer(Buffer.from('not-a-png-at-all')), false);
+});
+
+test('MCP aftereffects_toolkit renderFrame rejects a truncated PNG without emitting an image block', async (t) => {
+  const valid = Buffer.from(TINY_PNG, 'base64');
+  const truncatedBase64 = valid.subarray(0, valid.length - 8).toString('base64');
+  const { client } = await startMcpServer(t, async (appTarget, action, params) => {
+    if (action === 'toolkit_ae' && params && params.verb === 'renderFrame') {
+      return {
+        ok: true,
+        comp: 'MockComp',
+        time: 1.9,
+        path: 'C:/Temp/truncated.png',
+        temp: true,
+        base64: truncatedBase64,
+      };
+    }
+    return { ok: false, error: 'unexpected command' };
+  });
+
+  const result = await client.callTool({
+    name: 'aftereffects_toolkit',
+    arguments: { verb: 'renderFrame', params: { time: 1.9 } },
+  });
+
+  assert.equal(result.isError, true);
+  assert.equal(
+    result.content.some((block) => block.type === 'image'),
+    false,
+    'truncated PNG must never be emitted as an MCP image block'
+  );
+  assert.match(result.content[0].text, /incompleta o corrupta/);
+});
+
+test('main.js validates PNG IEND inside readFrameBase64 before resolving base64', () => {
+  const start = mainSource.indexOf('function readFrameBase64');
+  assert.ok(start > -1, 'readFrameBase64 must exist');
+  const block = mainSource.slice(start, mainSource.indexOf('TASK STEPPER ENGINE', start));
+  assert.match(block, /isCompletePngBuffer\(buf\)/);
 });

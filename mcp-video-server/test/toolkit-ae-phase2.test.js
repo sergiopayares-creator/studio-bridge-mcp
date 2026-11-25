@@ -150,6 +150,7 @@ test('dispatch routes every Phase 2 verb and keeps the legacy aliases', () => {
 test('projectNameMatches is case-insensitive exact or substring', () => {
   assert.equal(projectNameMatches('Demo.aep', 'demo.AEP'), true);
   assert.equal(projectNameMatches('Spot Cliente 30s.aep', 'spot cliente'), true);
+  assert.equal(projectNameMatches('Spot%20Cliente%2030s.aep', 'Spot Cliente 30s'), true);
   assert.equal(projectNameMatches('Spot Cliente 30s.aep', 'Otro'), false);
   assert.equal(projectNameMatches(null, 'x'), false);
   assert.equal(projectNameMatches('', ''), false);

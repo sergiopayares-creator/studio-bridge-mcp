@@ -399,18 +399,44 @@ $.global.AntigravityToolkitAE = (function () {
         }
     }
 
+    // Verifica cabecera PNG y chunk final IEND antes de dar por escrito el frame.
+    function isPngComplete(filePath) {
+        var f = new File(filePath);
+        if (!f.exists || f.length < 45) return false;
+        f.encoding = 'BINARY';
+        if (!f.open('r')) return false;
+        try {
+            var head = f.read(8);
+            if (!head || head.length !== 8) return false;
+            var sig = [137, 80, 78, 71, 13, 10, 26, 10];
+            var i;
+            for (i = 0; i < 8; i++) {
+                if (head.charCodeAt(i) !== sig[i]) return false;
+            }
+            if (!f.seek(f.length - 12, 0)) return false;
+            var tail = f.read(12);
+            if (!tail || tail.length !== 12) return false;
+            var iend = [0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130];
+            for (i = 0; i < 12; i++) {
+                if (tail.charCodeAt(i) !== iend[i]) return false;
+            }
+            return true;
+        } catch (ePngChk) {
+            return false;
+        } finally {
+            try { f.close(); } catch (eCl) {}
+        }
+    }
+
     // saveFrameToPng escribe en diferido: espera acotada a que el archivo exista
-    // y tenga bytes en disco antes de devolver su ruta al panel/MCP.
+    // y tenga firma PNG + bloque final IEND en disco antes de devolver su ruta.
     function waitForFileWritten(file, timeoutMs) {
         var start = new Date().getTime();
         var limit = (timeoutMs === undefined || timeoutMs === null) ? 10000 : timeoutMs;
         while (true) {
             var ok = false;
             try {
-                // Un File nuevo fuerza una lectura fresca de exists/length: el
-                // objeto original puede tener cacheado el estado previo.
-                var probe = new File(file.fsName);
-                ok = (probe.exists && probe.length > 0) ? true : false;
+                ok = isPngComplete(file.fsName);
             } catch (eChk) { ok = false; }
             if (ok) return true;
             if (new Date().getTime() - start >= limit) return false;
@@ -3166,13 +3192,12 @@ $.global.AntigravityToolkitAE = (function () {
                 pathTimes.push(times[i]);
             } catch (ePng) {}
         }
-        // saveFrameToPng escribe en diferido: espera acotada a que existan.
+        // saveFrameToPng escribe en diferido: espera acotada a que tengan cabecera PNG y cierre IEND.
         var tries = 0;
-        while (tries < 30) {
+        while (tries < 100) {
             var pending = 0;
             for (i = 0; i < paths.length; i++) {
-                var waitFile = new File(paths[i]);
-                if (!waitFile.exists || waitFile.length <= 0) pending++;
+                if (!isPngComplete(paths[i])) pending++;
             }
             if (pending === 0) break;
             if (typeof $.sleep === 'function') $.sleep(100);
@@ -3184,8 +3209,7 @@ $.global.AntigravityToolkitAE = (function () {
         var readyTimes = [];
         var notReady = [];
         for (i = 0; i < paths.length; i++) {
-            var chk = new File(paths[i]);
-            if (chk.exists && chk.length > 0) {
+            if (isPngComplete(paths[i])) {
                 ready.push(paths[i]);
                 readyTimes.push(pathTimes[i]);
             } else {

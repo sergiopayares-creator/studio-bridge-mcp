@@ -33,6 +33,7 @@ import {
   normalizeOutputPathParams,
   buildContactSheetJpeg,
   buildCompareSheet,
+  isCompletePngBuffer,
 } from './lib/aftereffects.js';
 import { transcribeAudio } from './lib/transcribe.js';
 import {
@@ -162,17 +163,39 @@ export function buildImageResult(meta, data, mimeType = 'image/jpeg') {
   };
 }
 
+export { isCompletePngBuffer };
+
+export function isCompleteJpegBuffer(buf) {
+  return (
+    Buffer.isBuffer(buf) &&
+    buf.length >= 4 &&
+    buf[0] === 0xff &&
+    buf[1] === 0xd8 &&
+    buf[2] === 0xff &&
+    buf[buf.length - 2] === 0xff &&
+    buf[buf.length - 1] === 0xd9
+  );
+}
+
 // Reads a frame already saved on disk and returns it as an image block,
 // re-compressing through ffmpeg only when the file is too heavy to inline.
 export async function imageResultFromFile(meta, imagePath, { maxWidth = 1600 } = {}) {
   const buffer = fs.readFileSync(imagePath);
+  const validPng = isCompletePngBuffer(buffer);
+  const validJpeg = isCompleteJpegBuffer(buffer);
+  if (!validPng && !validJpeg) {
+    throw new Error(`imageResultFromFile: imagen incompleta o corrupta en ${imagePath}`);
+  }
   let data;
   let mimeType;
   if (buffer.length <= MAX_INLINE_IMAGE_BYTES) {
     data = buffer.toString('base64');
-    mimeType = /\.jpe?g$/i.test(imagePath) ? 'image/jpeg' : 'image/png';
+    mimeType = validJpeg ? 'image/jpeg' : 'image/png';
   } else {
     data = await imageFileToJpegBase64(imagePath, maxWidth);
+    if (!isCompleteJpegBuffer(Buffer.from(data, 'base64'))) {
+      throw new Error(`imageResultFromFile: recompresión JPEG inválida para ${imagePath}`);
+    }
     mimeType = 'image/jpeg';
   }
   return buildImageResult(
@@ -187,6 +210,14 @@ export async function imageResultFromFile(meta, imagePath, { maxWidth = 1600 } =
 export async function frameResultToImageResult(result, guard = null) {
   const source = cleanBase64(result.base64);
   if (!source) throw new Error('renderFrame did not return image data');
+  const rawBuf = Buffer.from(source, 'base64');
+  const validPng = isCompletePngBuffer(rawBuf);
+  const validJpeg = isCompleteJpegBuffer(rawBuf);
+  if (!validPng && !validJpeg) {
+    throw new Error(
+      'renderFrame devolvió una imagen incompleta o corrupta (sin cierre PNG IEND / JPEG EOI); abortando para no contaminar la conversación'
+    );
+  }
   const meta = {
     ok: true,
     ...(result.comp ? { comp: result.comp } : {}),
@@ -196,23 +227,32 @@ export async function frameResultToImageResult(result, guard = null) {
     path: result.path,
     ...(guard ? { projectGuard: guard } : {}),
   };
-  const approxBytes = Math.floor(source.length * 0.75);
+  const approxBytes = rawBuf.length;
   if (approxBytes > MAX_INLINE_IMAGE_BYTES) {
+    let jpeg;
     try {
-      const jpeg = await base64ImageToJpegBase64(source, 1600);
-      return buildImageResult(
-        { ...meta, mimeType: 'image/jpeg', bytes: Buffer.byteLength(jpeg, 'base64'), recompressed: true },
-        jpeg,
-        'image/jpeg'
-      );
+      jpeg = await base64ImageToJpegBase64(source, 1600);
     } catch (err) {
-      meta.recompressError = err.message || String(err);
+      throw new Error(
+        `renderFrame: falló la verificación/recompresión de imagen con FFmpeg (${err.message || err}); no se devuelve imagen para evitar HTTP 400 INVALID_MEDIA`
+      );
     }
+    if (!isCompleteJpegBuffer(Buffer.from(jpeg, 'base64'))) {
+      throw new Error(
+        'renderFrame: la recompresión JPEG resultó incompleta; no se devuelve imagen para evitar HTTP 400 INVALID_MEDIA'
+      );
+    }
+    return buildImageResult(
+      { ...meta, mimeType: 'image/jpeg', bytes: Buffer.byteLength(jpeg, 'base64'), recompressed: true },
+      jpeg,
+      'image/jpeg'
+    );
   }
+  const mimeType = validJpeg ? 'image/jpeg' : 'image/png';
   return buildImageResult(
-    { ...meta, mimeType: 'image/png', bytes: Buffer.byteLength(source, 'base64') },
+    { ...meta, mimeType, bytes: rawBuf.length },
     source,
-    'image/png'
+    mimeType
   );
 }
 
@@ -220,8 +260,15 @@ export async function frameResultToImageResult(result, guard = null) {
 // projectName reported by Premiere/AE is a file name like "Spot 30s.aep".
 export function projectNameMatches(actual, expected) {
   if (typeof actual !== 'string' || typeof expected !== 'string') return false;
-  const a = actual.trim().toLowerCase();
-  const e = expected.trim().toLowerCase();
+  const decode = (s) => {
+    try {
+      return decodeURIComponent(s);
+    } catch (_) {
+      return s;
+    }
+  };
+  const a = decode(actual).trim().toLowerCase();
+  const e = decode(expected).trim().toLowerCase();
   if (!a || !e) return false;
   return a === e || a.includes(e);
 }

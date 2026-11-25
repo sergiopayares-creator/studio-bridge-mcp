@@ -13,11 +13,15 @@ function loadAllowlist() {
   const code = fs.readFileSync(allowlistPath, 'utf8');
   const sandbox = { module: { exports: {} }, exports: {} };
   vm.runInNewContext(code, sandbox, { filename: 'bridge-actions.js' });
-  return sandbox.module.exports;
+  return { exported: sandbox.module.exports, globalRef: sandbox.StudioBridgeActions };
 }
 
 test('la allowlist acepta las acciones y macros conocidas del panel', () => {
-  const { isAllowedAction, isAllowedMacro } = loadAllowlist();
+  const { exported, globalRef } = loadAllowlist();
+  const { isAllowedAction, isAllowedMacro } = exported;
+  assert.ok(globalRef, 'StudioBridgeActions debe quedar expuesto en root aunque exista module.exports');
+  assert.equal(typeof globalRef.isAllowedAction, 'function');
+  assert.equal(typeof globalRef.isAllowedMacro, 'function');
   for (const action of [
     'evalScript',
     'evalCustom',
@@ -41,7 +45,8 @@ test('la allowlist acepta las acciones y macros conocidas del panel', () => {
 });
 
 test('la allowlist rechaza acciones arbitrarias y nombres heredados de Object', () => {
-  const { isAllowedAction, isAllowedMacro } = loadAllowlist();
+  const { exported } = loadAllowlist();
+  const { isAllowedAction, isAllowedMacro } = exported;
   for (const value of [
     '',
     'system.callSystem',

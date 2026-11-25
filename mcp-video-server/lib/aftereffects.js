@@ -11,9 +11,14 @@ import {
 } from './ffmpeg.js';
 
 const AE_PATHS = [
+  'C:\\Program Files\\Adobe\\Adobe After Effects 2027\\Support Files\\AfterFX.exe',
   'C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe',
   'C:\\Program Files\\Adobe\\Adobe After Effects 2025\\Support Files\\AfterFX.exe',
-  'C:\\Program Files\\Adobe\\Adobe After Effects (Beta)\\Support Files\\AfterFX.exe'
+  'C:\\Program Files\\Adobe\\Adobe After Effects (Beta)\\Support Files\\AfterFX.exe',
+  '/Applications/Adobe After Effects 2027/Adobe After Effects 2027.app',
+  '/Applications/Adobe After Effects 2026/Adobe After Effects 2026.app',
+  '/Applications/Adobe After Effects 2025/Adobe After Effects 2025.app',
+  '/Applications/Adobe After Effects (Beta)/Adobe After Effects (Beta).app',
 ];
 
 export function findAfterEffectsExe() {

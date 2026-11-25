@@ -26,7 +26,7 @@ Most **After Effects MCP** and **Premiere Pro MCP** integrations rely on `/tmp` 
 | **Context Footprint** | 250–1,200 separate tool schemas | **16 compact MCP tools** via 3 multiplexed toolkits + on-demand `adobe_guide` |
 | **Apps Covered** | Either Premiere OR After Effects | **After Effects (CEP) + Premiere Pro (CEP & UXP 25.6+) + FFmpeg / Whisper** |
 | **Visual Verification** | Blind script execution | **Native `renderFrame`, `contactSheet`, and `compare`** returning PNG/JPEG blocks |
-| **Security & Tests** | Unauthenticated local eval | **256-bit Bearer auth, strict localhost CORS, action allowlist, 81+ automated tests** |
+| **Security & Tests** | Unauthenticated local eval | **256-bit Bearer auth, strict localhost CORS, action allowlist, 85+ automated tests** |
 
 ---
 
@@ -51,8 +51,8 @@ Most **After Effects MCP** and **Premiere Pro MCP** integrations rely on `/tmp` 
 
 | Category | Tool Name | Purpose |
 | :--- | :--- | :--- |
-| **After Effects (CEP)** | `aftereffects_toolkit` | Deterministic verbs: `status`, `measure`, `pose`, `check`, `comp`, `layer`, `text`, `textStyle`, `shape`, `set`, `ensureKeysAfter`, `zStack`, `settings`, `effects`, `mask`, `camera`, `precomp`, `markers`, `importFile`, `renderFrame`, `contactSheet`, `compare`, `renderOutput`, `save`, `undo`. |
-| **Premiere Pro (CEP)** | `premiere_toolkit` | Deterministic verbs: `status`, `inspect`, `sequence`, `importFile`, `place`, `trim`, `split`, `rippleDelete`, `transition`, `transform`, `clipVolume`, `audioDuck`, `colorGrade`, `markers`, `importSrt`, `captions`, `renderFrame`, `contactSheet`, `exportMedia`, `save`. |
+| **After Effects (CEP)** | `aftereffects_toolkit` | Deterministic verbs: `project`, `catalog`, `comp`, `layer`, `settings`, `shape`, `shapeGroup`, `fill`, `text`, `textStyle`, `textAnimator`, `camera`, `light`, `effect`, `effectParam`, `effectKey`, `transform`, `keyframe`, `set`, `ensureKeysAfter`, `expression`, `mask`, `roto`, `tracker`, `marker`, `import`, `folder`, `items`, `measure`, `alignAnchor`, `zStack`, `pose`, `check`, `halo`, `batch`, `render`, `renderOutput`, `renderFrame`, `contactSheet`, `compare`, `selection`, `save`. |
+| **Premiere Pro (CEP)** | `premiere_toolkit` | Deterministic verbs: `catalog`, `project`, `insert`, `overwrite`, `razor`, `removeClip`, `subclip`, `applyTransition`, `applyEffect`, `marker`, `clearMarkers`, `clipMotion`, `clipVolume`, `clipSpeed`, `assemble`, `import`, `bin`, `export`, `importSrt`, `renderFrame`, `contactSheet`, `save`, `saveSafe`. |
 | **Premiere Pro (UXP)** | `premiere_uxp_toolkit` | Modern Premiere 25.6+ UXP panel verbs: `status`, `effectsList`, `effectsAdd`, `effectsRemove`, `clipParams`, `clipParamSet`. |
 | **Documentation** | `adobe_guide` | Read-only engine invariants, coordinate math, easing rules, and verb reference for AE, Premiere, and UXP. |
 | **Local FFmpeg / Audio** | `video_get_info` | Probe resolution, codec, FPS, duration, and audio streams via `ffprobe`. |
@@ -73,24 +73,36 @@ Most **After Effects MCP** and **Premiere Pro MCP** integrations rely on `/tmp` 
 
 ## Quick Start (Claude Code, Cursor, Claude Desktop, Windsurf)
 
+### Prerequisites
+
+- **Node.js 20+** (LTS)
+- **FFmpeg** available on `PATH` (required for `renderFrame` JPEG recompression, `contactSheet`, `compare`, and local video/audio tools)
+- **Adobe After Effects** and/or **Adobe Premiere Pro** (CC 2020–2027+)
+- *(Optional)* Local `whisper.cpp` via `mcp-video-server/setup-whisper.ps1` for `video_transcribe`
+
 ### 1. Install Dependencies & CEP Extension
 
-```powershell
-# 1. Install MCP server dependencies
-cd mcp-video-server
-npm install
-cd ..
+- **Windows (PowerShell or double-click `Instalar-Studio-Bridge.bat`):**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\install.ps1
+  ```
 
-# 2. Install the CEP panel into Adobe's extensions directory (Windows)
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-```
+- **macOS:**
+  ```bash
+  chmod +x install.sh
+  ./install.sh
+  ```
 
-Open **Premiere Pro** or **After Effects** and enable the panel under:
+Both installers enable `PlayerDebugMode`, link `extension/` into Adobe's CEP extensions folder, and run `npm install` inside `mcp-video-server/`.
+
+Restart **Premiere Pro** / **After Effects** and open the panel once under:
 `Window > Extensions > Studio Bridge`
 
 *(For Premiere Pro 25.6+ UXP capabilities, load the `uxp-premiere/` folder via the Adobe UXP Developer Tool).*
 
 ### 2. Connect Your MCP Client
+
+Set `ANTIGRAVITY_WRITABLE_ROOTS` to the project/export folders the agent is allowed to write to (separated by `;` on Windows or `:` on macOS). Without it, write operations (`save`, `renderOutput`, `export`, custom output paths) fail closed. Arbitrary ExtendScript (`aftereffects_execute_extendscript`) stays disabled unless `STUDIO_BRIDGE_ALLOW_ARBITRARY_JS=1` is explicitly set.
 
 - **Single-Client Mode (`stdio` — Claude Desktop / Cursor / Windsurf):**
   ```json
@@ -98,16 +110,25 @@ Open **Premiere Pro** or **After Effects** and enable the panel under:
     "mcpServers": {
       "studio-bridge-mcp": {
         "command": "node",
-        "args": ["/absolute/path/to/studio-bridge-mcp/mcp-video-server/index.js"]
+        "args": ["/absolute/path/to/studio-bridge-mcp/mcp-video-server/index.js"],
+        "env": {
+          "ANTIGRAVITY_WRITABLE_ROOTS": "/absolute/path/to/projects;/absolute/path/to/renders"
+        }
       }
     }
   }
   ```
 
 - **Multi-Agent Shared Broker Mode (`HTTP 8766`):**
-  Start the broker once:
-  ```bash
+  Start the broker once with your writable roots exported:
+  ```powershell
+  # Windows PowerShell
+  $env:ANTIGRAVITY_WRITABLE_ROOTS = "C:\Projects;C:\Renders"
   node mcp-video-server/broker.js
+  ```
+  ```bash
+  # macOS / Linux
+  ANTIGRAVITY_WRITABLE_ROOTS="/path/to/projects:/path/to/renders" node mcp-video-server/broker.js
   ```
   Then connect any MCP client using the generated Bearer token in `~/.antigravity-studio-bridge/.bridge-secret`:
   ```json
@@ -124,6 +145,15 @@ Open **Premiere Pro** or **After Effects** and enable the panel under:
   }
   ```
 
+### 3. Verify Installation
+
+1. Check the broker health endpoint (in broker mode):
+   ```bash
+   curl -H "Authorization: Bearer $(cat ~/.antigravity-studio-bridge/.bridge-secret)" http://127.0.0.1:8766/health
+   ```
+2. Call `adobe_cep_bridge_status` from your AI agent to confirm `connectedApps` lists `After Effects` and/or `Premiere Pro`.
+3. Run the automated test suite below to verify local dependencies.
+
 ---
 
 ## Running the Test Suite
@@ -133,7 +163,7 @@ cd mcp-video-server
 npm test
 ```
 
-Includes **81+ deterministic assertions** validating Bearer authentication, CORS isolation, client action allowlists, strict ES3 compilation for `toolkit.jsx` and `toolkit_ae.jsx`, contact-sheet image packaging, and UXP isolation.
+Includes **85+ deterministic assertions** validating Bearer authentication, CORS isolation, client action allowlists, strict ES3 compilation for `toolkit.jsx` and `toolkit_ae.jsx`, PNG trailer validation, contact-sheet image packaging, and UXP isolation.
 
 ---
 
